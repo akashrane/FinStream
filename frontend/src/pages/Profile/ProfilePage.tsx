@@ -1,10 +1,8 @@
 // ProfilePage.tsx
 import { useState, useEffect } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { generateReceipt } from '../../services/pdfService';
 import './ProfilePage.css';
-import axios from 'axios';
 import {
   UserCircleIcon,
   EnvelopeIcon,
@@ -14,23 +12,23 @@ import {
   PencilSquareIcon,
   CheckIcon,
   XMarkIcon
-} from '@heroicons/react/24/outline'; // Importing from v2 format usually found in package.json dependencies
+} from '@heroicons/react/24/outline';
 
 const ProfilePage = () => {
-  const { keycloak, initialized } = useKeycloak();
+  // Mock Keycloak for No-Auth
+  const keycloak = { authenticated: true, token: 'mock-token' };
   const { openModal } = useSubscription();
   const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    phone_number: '',
-    address: '',
-    subscription: " ",
+    name: 'Demo User',
+    email: 'demo@finstream.com',
+    phone_number: '+1 (555) 123-4567',
+    address: '123 Wall Street, NY',
+    subscription: "Free",
     payment_history: []
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     try {
@@ -39,89 +37,6 @@ const ProfilePage = () => {
       }
     } catch (e) { }
   }, [profile]);
-
-  const realm = 'Finstream_External';
-
-  // Load profile on mount
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!keycloak.authenticated || !keycloak.token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await axios.get(
-          `http://localhost:8080/realms/${realm}/account`,
-          {
-            headers: { Authorization: `Bearer ${keycloak.token}` }
-          }
-        );
-
-        const data = response.data;
-        setProfile({
-          name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.username || '',
-          email: data.email || '',
-          phone_number: data.attributes?.phone_number?.[0] || '',
-          address: data.attributes?.address?.[0] || '',
-          subscription: data.attributes?.subscription?.[0] || '',
-          subscription: data.attributes?.subscription?.[0] || '',
-          payment_history: [] // Set default, will populate effectively via separate effect or just here if I have keycloak
-        });
-
-        // Fetch Local History
-        if (keycloak.tokenParsed?.email) {
-          const storageKey = `payment_history_${keycloak.tokenParsed.email}`;
-          const localHistory = localStorage.getItem(storageKey);
-          if (localHistory) {
-            setProfile(prev => ({
-              ...prev,
-              payment_history: JSON.parse(localHistory)
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (initialized) {
-      fetchProfile();
-    }
-  }, [keycloak, initialized]);
-
-  // Update profile in Keycloak
-  const editProfile = async () => {
-    if (!keycloak.authenticated || !keycloak.token) {
-      throw new Error('User not authenticated');
-    }
-
-    const requestBody = {
-      username: keycloak.tokenParsed?.preferred_username || '',
-      firstName: profile.name.split(' ')[0] || '',
-      lastName: profile.name.split(' ').slice(1).join(' ') || '',
-      email: profile.email,
-      attributes: {
-        phone_number: [profile.phone_number],
-        address: [profile.address]
-      }
-    };
-
-    const response = await axios.post(
-      `http://localhost:8080/realms/${realm}/account`,
-      requestBody,
-      {
-        headers: {
-          Authorization: `Bearer ${keycloak.token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    return response.data;
-  };
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,30 +49,13 @@ const ProfilePage = () => {
     setIsEditing(!isEditing);
   };
 
-  // Save changes
+  // Save changes (Mock)
   const handleSave = async () => {
-    try {
-      await editProfile();
-      alert('Profile updated successfully!');
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      alert('Failed to update profile. Please try again.');
-    }
+    alert('Profile updated successfully! (Demo Mode)');
+    setIsEditing(false);
   };
 
-  if (!initialized || loading) return <div className="profile-loading"><div className="spinner"></div></div>;
-
-  if (!keycloak.authenticated) {
-    return (
-      <div className="profile-page">
-        <div className="profile-container glass-panel">
-          <h1 className="gradient-text">Profile Management</h1>
-          <p className="login-prompt">Please log in to view your profile and manage your subscription.</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="profile-loading"><div className="spinner"></div></div>;
 
   // Generate initials for avatar
   const initials = profile.name
@@ -166,10 +64,6 @@ const ProfilePage = () => {
     .join('')
     .toUpperCase()
     .slice(0, 2);
-
-
-  // Actually, let's just parse it directly from profile state if I add it there.
-  // I'll update the initial fetch logic to include payment_history.
 
   return (
     <div className="profile-page">
@@ -194,9 +88,6 @@ const ProfilePage = () => {
       </div>
 
       <div className="profile-container glass-panel">
-
-        {/* Left Column: Avatar & Quick Info - Always visible or only on overview? User asked for a "tab", usually implies switching content. 
-            Let's keep the sidebar always visible as it's the "Profile Card", and switch the Right Column content. */}
         <div className="profile-sidebar">
           <div className="avatar-circle">
             {initials || <UserCircleIcon className="w-12 h-12" />}
@@ -207,9 +98,7 @@ const ProfilePage = () => {
           </span>
         </div>
 
-        {/* Right Column: Detailed Form or History */}
         <div className="profile-details">
-
           {activeTab === 'overview' ? (
             <>
               <div className="section-header">

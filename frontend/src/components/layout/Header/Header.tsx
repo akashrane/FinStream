@@ -1,13 +1,17 @@
 import React from 'react';
 import SearchBar from '../../ui/SearchBar';
 import Button from '../../ui/Button';
-import { useKeycloak } from '@react-keycloak/web';
 import { useNavigate } from 'react-router-dom';
 import './Header.css';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { keycloak } = useKeycloak();
+  // Mock Keycloak for No-Auth deployment
+  const keycloak = {
+    authenticated: true,
+    login: (options?: any) => { },
+    logout: (options?: any) => window.location.reload()
+  };
 
   const handleLogoClick = () => {
     navigate('/');
@@ -18,8 +22,8 @@ const Header: React.FC = () => {
       <div className="header-container">
         {/* Logo and Search */}
         <div className="header-left">
-          <div 
-            className="logo" 
+          <div
+            className="logo"
             onClick={handleLogoClick}
             style={{ cursor: 'pointer' }}
           >
@@ -37,7 +41,7 @@ const Header: React.FC = () => {
 
         {/* User Actions */}
         <div className="header-actions">
-         
+
 
           {!keycloak.authenticated && (
             <Button
@@ -55,7 +59,7 @@ const Header: React.FC = () => {
               onClick={() => keycloak.logout({ redirectUri: window.location.origin })}
             >
               Logout
-              </Button>
+            </Button>
           )}
         </div>
       </div>

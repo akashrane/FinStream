@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useKeycloak } from '@react-keycloak/web';
 import MainLayout from './components/layout/MainLayout';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/Profile/ProfilePage';
@@ -19,19 +18,8 @@ import SubscriptionModal from './components/features/Subscription/SubscriptionMo
 import './App.css';
 
 // Protected Route Component (inline)
+// Protected Route Component (Bypassed for Demo)
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { keycloak, initialized } = useKeycloak();
-
-  if (!initialized) {
-    return <div>Loading...</div>;
-  }
-
-  if (!keycloak.authenticated) {
-    // Redirect to Keycloak login
-    keycloak.login({ redirectUri: window.location.origin + window.location.pathname });
-    return <div>Redirecting to login...</div>;
-  }
-
   return <>{children}</>;
 };
 
