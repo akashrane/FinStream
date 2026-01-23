@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
-import axios from 'axios';
+import keycloak from '../../../utils/kc';
+// import axios from 'axios'; // Removed
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { generateReceipt } from '../../../services/pdfService';
 import Button from '../../ui/Button';
@@ -17,8 +17,8 @@ type PlanType = {
 
 const SubscriptionModal: React.FC = () => {
     const { isModalOpen, closeModal } = useSubscription();
-    const { keycloak } = useKeycloak();
-    const realm = 'Finstream_External';
+    // const { keycloak } = useKeycloak(); // Removed
+    // const realm = 'Finstream_External'; // Removed
 
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
@@ -70,28 +70,13 @@ const SubscriptionModal: React.FC = () => {
         }
     ];
 
-    // FETCH CURRENT SUBSCRIPTION
+    // MOCK FETCH SUBSCRIPTION
     const fetchCurrentSubscription = useCallback(async () => {
-        if (!keycloak.authenticated || !keycloak.token) {
-            setCurrentSubscription(null);
-            return;
-        }
-        try {
-            const profileResponse = await axios.get(
-                `http://localhost:8080/realms/${realm}/account`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${keycloak.token}`,
-                    },
-                }
-            );
-            const subscription = profileResponse.data?.attributes?.subscription?.[0] || null;
-            setCurrentSubscription(subscription);
-        } catch (error) {
-            console.error('Failed to fetch subscription:', error);
-            setCurrentSubscription(null);
-        }
-    }, [keycloak.authenticated, keycloak.token, realm]);
+        // Simulate API
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const savedSub = localStorage.getItem('user_subscription');
+        setCurrentSubscription(savedSub || null);
+    }, []);
 
     // LOAD SUBSCRIPTION ON OPEN
     useEffect(() => {
@@ -109,67 +94,26 @@ const SubscriptionModal: React.FC = () => {
         setShowPaymentForm(false);
     };
 
-    // GENERIC UPDATE PROFILE ATTRIBUTES
+    // MOCK UPDATE PROFILE ATTRIBUTES
     const updateProfileAttributes = async (newAttributes: Record<string, any>) => {
-        if (!keycloak.authenticated || !keycloak.token) {
-            throw new Error('User not authenticated');
-        }
-        try {
-            const token = keycloak.token;
-            // 1. Fetch latest profile to ensure we don't overwrite existing attributes with stale data
-            const profileResponse = await axios.get(
-                `http://localhost:8080/realms/${realm}/account`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            const profile = profileResponse.data;
-            const existingAttributes = profile.attributes || {};
+        // Simulate API
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 2. Merge attributes
-            const updatedProfile = {
-                ...profile,
-                attributes: {
-                    ...existingAttributes,
-                    ...newAttributes
-                }
-            };
-
-            // 3. Save back to Keycloak
-            await axios.post(
-                `http://localhost:8080/realms/${realm}/account`,
-                updatedProfile,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-            return updatedProfile;
-        } catch (error: any) {
-            console.error('Failed to update profile:', error);
-            throw error;
+        // Update local mock state
+        if (newAttributes.subscription) {
+            localStorage.setItem('user_subscription', newAttributes.subscription[0]);
         }
+        return { attributes: newAttributes };
     };
 
     // PAYMENT FORM SUBMIT
-    // PAYMENT FORM SUBMIT
     const handlePaymentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedPlan || !keycloak.token) return;
+        if (!selectedPlan) return;
 
         try {
-            // 1. Fetch current history first (to append correctly)
-            const profileResponse = await axios.get(
-                `http://localhost:8080/realms/${realm}/account`,
-                { headers: { Authorization: `Bearer ${keycloak.token}` } }
-            );
-
-            const attributes = profileResponse.data.attributes || {};
-
-            // 1. Get history from LocalStorage (Session persistence as requested)
-            const userEmail = keycloak.tokenParsed?.email;
+            // 1. Get history from LocalStorage
+            const userEmail = "demo@example.com";
             const storageKey = `payment_history_${userEmail}`;
             let currentHistory = [];
 
@@ -192,7 +136,7 @@ const SubscriptionModal: React.FC = () => {
             const updatedHistory = [...currentHistory, newTransaction];
             localStorage.setItem(storageKey, JSON.stringify(updatedHistory));
 
-            // 3. Update Keycloak (Subscription Status Only)
+            // 3. Update Mock Subscription
             await updateProfileAttributes({
                 subscription: [selectedPlan.id]
             });
@@ -204,13 +148,12 @@ const SubscriptionModal: React.FC = () => {
                 planName: newTransaction.planName,
                 amount: newTransaction.amount,
                 userEmail: userEmail || '',
-                userName: `${profileResponse.data.firstName || ''} ${profileResponse.data.lastName || ''}`.trim()
+                userName: "Demo User"
             });
 
             // 5. Success UI
             setCurrentSubscription(selectedPlan.id);
             setShowSuccess(true);
-            // Don't close or reload yet
 
         } catch (err) {
             console.error('Failed to process payment:', err);

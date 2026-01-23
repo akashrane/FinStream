@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
 import Button from '../../ui/Button';
-import { useKeycloak } from '@react-keycloak/web';
+import keycloak from '../../../utils/kc';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import './SecondaryNav.css';
 import axios from 'axios';
@@ -16,8 +16,8 @@ type PlanType = {
 };
 
 const SecondaryNav: React.FC = () => {
-  const { keycloak } = useKeycloak();
-  const realm = 'Finstream_External';
+  // const { keycloak } = useKeycloak(); // Removed
+  // const realm = 'Finstream_External'; // Removed
   const { openModal } = useSubscription();
   const [currentSubscription, setCurrentSubscription] = useState<string | null>(null);
 
@@ -58,28 +58,13 @@ const SecondaryNav: React.FC = () => {
     { id: 'historical-data', label: 'Historical Data', href: '/historical-data' },
   ];
 
-  // FETCH CURRENT SUBSCRIPTION
+  // MOCK FETCH SUBSCRIPTION
   const fetchCurrentSubscription = useCallback(async () => {
-    if (!keycloak.authenticated || !keycloak.token) {
-      setCurrentSubscription(null);
-      return;
-    }
-    try {
-      const profileResponse = await axios.get(
-        `http://localhost:8080/realms/${realm}/account`,
-        {
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-      const subscription = profileResponse.data?.attributes?.subscription?.[0] || null;
-      setCurrentSubscription(subscription);
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
-      setCurrentSubscription(null);
-    }
-  }, [keycloak.authenticated, keycloak.token, realm]);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const savedSub = localStorage.getItem('user_subscription');
+    setCurrentSubscription(savedSub || null);
+  }, []);
 
   // LOAD SUBSCRIPTION ON AUTH CHANGE
   useEffect(() => {
