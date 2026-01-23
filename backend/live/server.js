@@ -180,14 +180,35 @@ app.get("/api/yahoo/quote", async (req, res) => {
 });
 
 // 2.5. Get Batch Quotes
+const quotesCache = new Map();
+const CACHE_DURATION = 60000; // 60 seconds
+
 app.get("/api/yahoo/quotes", async (req, res) => {
     const symbolsParam = req.query.symbols;
     if (!symbolsParam) return res.status(400).json({ error: "Query parameter 'symbols' required" });
 
     const symbols = symbolsParam.split(',');
+    const now = Date.now();
     
+    // Check cache
+    const cachedData = [];
+    const symbolsToFetch = [];
+
+    symbols.forEach(s => {
+        if (quotesCache.has(s) && (now - quotesCache.get(s).timestamp < CACHE_DURATION)) {
+            cachedData.push(quotesCache.get(s).data);
+        } else {
+            symbolsToFetch.push(s);
+        }
+    });
+
+    // If all cached, return immediately
+    if (symbolsToFetch.length === 0) {
+        return res.json(cachedData);
+    }
+
     try {
-        const promises = symbols.map(async (symbol) => {
+        const promises = symbolsToFetch.map(async (symbol) => {
             try {
                 const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1m&range=1d`;
                 const response = await axios.get(url, {
@@ -198,25 +219,37 @@ app.get("/api/yahoo/quotes", async (req, res) => {
                 if (!result || !result.meta) return null;
 
                 const meta = result.meta;
-                return {
+                const quote = {
                     symbol: meta.symbol,
                     price: meta.regularMarketPrice,
                     change: meta.regularMarketPrice - meta.chartPreviousClose, // generic calc
                     changePercent: ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
                     currency: meta.currency,
-                    name: meta.symbol, // Chart endpoint doesn't give full name often, but that's acceptable or we can fallback
+                    name: meta.symbol,
                     timestamp: Date.now()
                 };
+                
+                // Update cache
+                quotesCache.set(symbol, {
+                    timestamp: Date.now(),
+                    data: quote
+                });
+
+                return quote;
             } catch (err) {
                 console.error(`Failed to fetch quote for ${symbol}: ${err.message}`);
+                // Return cached if available (stale-while-revalidate fallback)
+                if (quotesCache.has(symbol)) return quotesCache.get(symbol).data;
                 return null;
             }
         });
 
-        const results = await Promise.all(promises);
-        const validQuotes = results.filter(q => q !== null);
+        const fetchedResults = await Promise.all(promises);
+        const validFetched = fetchedResults.filter(q => q !== null);
+        
+        // Combine cached and fetched
+        res.json([...cachedData, ...validFetched]);
 
-        res.json(validQuotes);
     } catch (error) {
         console.error("Yahoo Batch Quotes Error:", error.message);
         res.status(500).json({ error: "Failed to fetch batch quotes" });

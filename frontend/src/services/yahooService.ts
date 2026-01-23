@@ -110,7 +110,7 @@ class YahooService {
                 }
             });
 
-        }, 5000);
+        }, 60000);
     }
 
     subscribeToStock(symbol: string) {

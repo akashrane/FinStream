@@ -238,6 +238,10 @@ const LiveChart: React.FC<Props> = ({ symbol, onRemove }) => {
     const changePercent = startPrice ? (change / startPrice) * 100 : 0;
     const isPositive = change >= 0;
 
+    const safePrice = typeof currentPrice === 'number' ? currentPrice.toFixed(2) : '0.00';
+    const safeChange = typeof change === 'number' ? change.toFixed(2) : '0.00';
+    const safeChangePercent = typeof changePercent === 'number' ? changePercent.toFixed(2) : '0.00';
+
     return (
         <div className="live-chart-container">
             <div className="chart-header">
@@ -249,10 +253,10 @@ const LiveChart: React.FC<Props> = ({ symbol, onRemove }) => {
                 <div className="header-stats">
                     <div className="stat-group">
                         <span className={`current-price ${isPositive ? 'pos' : 'neg'}`}>
-                            ${currentPrice.toFixed(2)}
+                            ${safePrice}
                         </span>
                         <span className={`change-pill ${isPositive ? 'pos' : 'neg'}`}>
-                            {isPositive ? '+' : ''}{change.toFixed(2)} ({changePercent.toFixed(2)}%)
+                            {isPositive ? '+' : ''}{safeChange} ({safeChangePercent}%)
                         </span>
                     </div>
 
