@@ -1,7 +1,8 @@
 import { Stock, MarketIndex } from '../types';
+import { API_BASE_URL, WS_BASE_URL } from '../config';
 
-const BACKEND_API = 'http://localhost:3001/api/yahoo';
-const WS_URL = 'ws://localhost:3001';
+const BACKEND_API = `${API_BASE_URL}/api/yahoo`;
+const WS_URL = WS_BASE_URL;
 
 class YahooService {
     private ws: WebSocket | null = null;

@@ -1,8 +1,10 @@
+import { WS_BASE_URL } from '../config';
+
 export function connectLiveFinnhub(
   symbol: string,
   onTrade: (trade: any) => void
 ) {
-  const ws = new WebSocket("ws://localhost:3001");
+  const ws = new WebSocket(WS_BASE_URL);
   ws.binaryType = "blob";
 
   ws.onopen = () => {

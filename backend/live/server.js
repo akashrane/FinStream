@@ -3,14 +3,15 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 
-const FINNHUB_API_KEY = "d31i0e1r01qsprr13i20d31i0e1r01qsprr13i2g";
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || "d31i0e1r01qsprr13i20d31i0e1r01qsprr13i2g";
 const FINNHUB_URL = `wss://ws.finnhub.io?token=${FINNHUB_API_KEY}`;
 
 const app = express();
 app.use(cors());
 
-const server = app.listen(3001, () => {
-  console.log("🚀 Finnhub Live Proxy running on ws://localhost:3001");
+const PORT = process.env.PORT || 3001;
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Finnhub Live Proxy running on port ${PORT}`);
 });
 
 // --- Yahoo Finance Proxy Endpoints ---

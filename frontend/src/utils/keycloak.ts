@@ -3,10 +3,10 @@ import Keycloak from 'keycloak-js';
 class KeycloakService {
   private keycloak: Keycloak.KeycloakInstance;
   private isInitialized = false;
-  
+
   constructor() {
     this.keycloak = new Keycloak({
-      url: "http://localhost:8080",
+      url: process.env.REACT_APP_KEYCLOAK_URL || "http://localhost:8080",
       realm: "Finstream_External",
       clientId: "my_client",
     });
@@ -20,21 +20,21 @@ class KeycloakService {
       const hasValidToken = !!this.keycloak.token || !!localStorage.getItem('kc_token');
       return this.keycloak.authenticated && hasValidToken;
     }
-    
+
     this.isInitialized = true;
-    
+
     try {
       const authenticated = await this.keycloak.init({
         onLoad: 'check-sso',
         checkLoginIframe: false,
       });
-      
+
       // Only store token if authentication was successful
       if (authenticated && this.keycloak.token) {
         localStorage.setItem('kc_token', this.keycloak.token);
         console.log(this.keycloak.token)
         console.log(this.keycloak.idToken)
-    
+
         console.log('✅ Token stored successfully');
       } else {
         // Clear any stale tokens if not authenticated
@@ -44,7 +44,7 @@ class KeycloakService {
 
       console.log('🔐 Keycloak init result:', authenticated);
       console.log('🎫 Token exists:', !!this.keycloak.token);
-      
+
       return authenticated;
     } catch (error) {
       console.error('❌ Keycloak initialization failed:', error);
@@ -64,17 +64,17 @@ class KeycloakService {
       // Clear localStorage FIRST
       localStorage.removeItem('kc_token');
       localStorage.removeItem('kc_refreshToken');
-      
+
       // Reset the internal state BEFORE redirect
       this.isInitialized = false;
       this.keycloak.authenticated = false;
       this.keycloak.token = undefined;
       this.keycloak.refreshToken = undefined;
       this.keycloak.idToken = undefined;
-      
+
       // Then redirect to Keycloak logout
-      this.keycloak.logout({ 
-        redirectUri: window.location.origin 
+      this.keycloak.logout({
+        redirectUri: window.location.origin
       });
     } catch (error) {
       console.error('Logout error:', error);
