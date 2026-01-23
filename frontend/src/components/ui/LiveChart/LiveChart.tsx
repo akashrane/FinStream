@@ -16,6 +16,7 @@ import {
 import { Chart } from "react-chartjs-2";
 import "chartjs-adapter-date-fns";
 import { connectLiveFinnhub } from "../../../services/finnhubLive";
+import { yahooService } from "../../../services/yahooService";
 import "./LiveChart.css";
 
 // Register ChartJS components
@@ -54,15 +55,15 @@ const LiveChart: React.FC<Props> = ({ symbol, onRemove }) => {
         // 1. Fetch Historical Data first (so we have something to show immediately)
         const fetchHistory = async () => {
             try {
+                // Use yahooService to get history (handles production URLs correctly)
                 // Fetch last 1 day of 5-minute intervals
-                const response = await fetch(`http://localhost:3001/api/yahoo/history?symbol=${symbol}&range=1d&interval=5m`);
-                const history = await response.json();
+                const history = await yahooService.getStockHistory(symbol, '1d', '5m');
 
                 if (isMounted && Array.isArray(history) && history.length > 0) {
                     const formattedHistory = history.map((h: any) => ({
-                        x: h.timestamp * 1000,
+                        x: h.timestamp, // yahooService returns ms
                         y: h.close,
-                        v: h.volume
+                        v: h.volume || 0
                     }));
                     setData(formattedHistory);
 

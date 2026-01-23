@@ -387,12 +387,30 @@ const getMarketIndex = async (internalId, symbol) => {
   }
 };
 
+let cachedIndices = null;
+let lastIndicesFetchTime = 0;
+
 async function broadcastMarketIndices() {
+    const now = Date.now();
+    
+    // Cache Strategy: Only fetch if cache is empty or older than 60 seconds
+    if (cachedIndices && (now - lastIndicesFetchTime < 60000)) {
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({ type: 'trade', data: cachedIndices }));
+            }
+        });
+        return;
+    }
+
     const promises = Object.entries(YAHOO_SYMBOL_MAP).map(([id, symbol]) => getMarketIndex(id, symbol));
     const results = await Promise.all(promises);
     const validResults = results.filter(r => r !== null);
 
     if (validResults.length > 0) {
+        cachedIndices = validResults;
+        lastIndicesFetchTime = Date.now();
+        
         const tradeMsg = JSON.stringify({ type: 'trade', data: validResults });
         wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
@@ -417,7 +435,7 @@ setInterval(() => {
     // 2. Market Indices (Yahoo Finance)
     broadcastMarketIndices();
 
-}, 10000); // Slower interval (10s) to avoid Yahoo rate limits
+}, 30000); // Slower interval (30s) to avoid Yahoo rate limits
 
 
 // When frontend connects
