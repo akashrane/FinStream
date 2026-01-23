@@ -11,14 +11,19 @@ const ArticleCard: React.FC<ArticleCardProps> =
   }) => {
     const [imgError, setImgError] = React.useState(false);
 
-    const {
-      title,
-      description,
-      urlToImage: imageUrl,
-      stockTicker,
-      stockChange,
-      stockChangePercent,
-    } = (article as any) || {};
+    // Handle both NewsAPI (urlToImage) and Backend (imageUrl) formats
+    const rawArticle = (article as any) || {};
+    const title = rawArticle.title;
+    const description = rawArticle.description;
+    const imageUrl = rawArticle.imageUrl || rawArticle.urlToImage;
+    const stockTicker = rawArticle.stockTicker;
+    const stockChange = rawArticle.stockChange;
+    const stockChangePercent = rawArticle.stockChangePercent;
+
+    // Handle source which can be string (Backend) or object (NewsAPI)
+    const sourceName = typeof rawArticle.source === 'string'
+      ? rawArticle.source
+      : rawArticle.source?.name;
 
 
 
@@ -78,7 +83,7 @@ const ArticleCard: React.FC<ArticleCardProps> =
           )}
           <div className="article-meta">
             <div className="article-source-info">
-              <span className="article-source">{(article as any)?.source?.name}</span>
+              <span className="article-source">{sourceName}</span>
             </div>
             {renderStockTicker()}
           </div>

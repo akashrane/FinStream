@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ArticleCard from "../../ui/ArticleCard";
+import { newsService } from "../../../services/newsService";
 import "./FeaturedArticle.css";
 
 const FeaturedArticle: React.FC = () => {
@@ -7,33 +8,28 @@ const FeaturedArticle: React.FC = () => {
 
   useEffect(() => {
     const fetchNews = async () => {
-      const API_KEY = "b196a8de07bb439cb7fcb9099563779d";
-
-      // Correct endpoint for articles
-      const url = `https://newsapi.org/v2/everything?q=stocks&language=en&sortBy=publishedAt&apiKey=${API_KEY}`;
-
       try {
-        const response = await fetch(url);
-        const data = await response.json();
+        // Use the centralized news service which proxies to the backend
+        const articles = await newsService.getNews('market');
 
-        if (data.status === "ok" && Array.isArray(data.articles)) {
-          // Pick the first article with a valid image, excluding problematic sources like Biztoc
-          const validArticle = data.articles.find(
+        if (Array.isArray(articles) && articles.length > 0) {
+          // Pick the first valid article
+          const validArticle = articles.find(
             (a: any) =>
-              a.urlToImage &&
+              a.imageUrl &&
               a.title &&
-              !a.source?.name?.toLowerCase().includes('biztoc')
+              !a.source?.toLowerCase().includes('biztoc')
           );
 
           if (validArticle) {
             setFeatured(validArticle);
           } else {
-            console.error("No suitable featured article found");
+            console.warn("No suitable featured article found with image");
+            // Fallback to first article even without image if necessary, but UI prefers image
+            if (articles.length > 0) setFeatured(articles[0]);
           }
-
-          console.log("Fetched featured article:", validArticle);
         } else {
-          console.error("Invalid API response:", data);
+          console.warn("No articles returned from news service");
         }
       } catch (error) {
         console.error("Error fetching featured article:", error);
