@@ -43,6 +43,16 @@ const Header: React.FC = () => {
         <div className="header-actions">
 
 
+          {/* Demo Button */}
+          <a
+            href="https://drive.google.com/file/d/1TQyOq37F1EtofhfGkHPbR9Tbuk7wj1A8/view"
+            className="demo-button"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Watch Full Demo Here
+          </a>
+
           {!keycloak.authenticated && (
             <Button
               variant="outline" size="small"
